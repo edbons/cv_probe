@@ -5,6 +5,7 @@ __pycache__/
 
 .vscode
 *.avi
+*.mp4
 *.csv
 *.dat
 images/*
