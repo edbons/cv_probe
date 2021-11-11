@@ -114,7 +114,7 @@ def evaluate(path: str, saved_path: str='./images', save_img: bool=False, estima
         return None
 
 
-def stream_predict_save(path: str, estimator='base'):
+def stream_predict_save(path: str, estimator='base', decrease_resolution_limit=(720, 480)):
     feature_params = dict(maxCorners=1000,
                         qualityLevel=0.3,
                         minDistance=2,
@@ -126,8 +126,18 @@ def stream_predict_save(path: str, estimator='base'):
 
     cap = cv.VideoCapture(path)
 
-    new_w = int(cap.get(cv.CAP_PROP_FRAME_WIDTH)) / 3
-    new_h = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT)) / 3
+    w = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
+    h = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
+
+    if w > decrease_resolution_limit[0] and h > decrease_resolution_limit[1]:
+        w_factor = w // decrease_resolution_limit[0]
+        h_factor = h // decrease_resolution_limit[1]
+        decrease_factor = min(w_factor, h_factor)
+        new_w = w // decrease_factor
+        new_h = h // decrease_factor
+    else:        
+        new_w = w
+        new_h = h
 
     fourcc = cv.VideoWriter_fourcc(*'X264')
     out = cv.VideoWriter('output.mp4', fourcc, 15, (int(new_w), int(new_h)), isColor=True)
@@ -135,6 +145,7 @@ def stream_predict_save(path: str, estimator='base'):
     velocities = []
     text = ""
     ret, frame = cap.read()
+    
     frame = cv.resize(frame, (int(new_w), int(new_h)), fx=0, fy=0, interpolation = cv.INTER_CUBIC)
     out.write(frame)
 
