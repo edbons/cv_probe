@@ -140,13 +140,13 @@ def stream_predict_save(path: str, estimator='base', decrease_resolution_limit=(
         new_h = h
 
     fourcc = cv.VideoWriter_fourcc(*'X264')
-    out = cv.VideoWriter('output.mp4', fourcc, 15, (int(new_w), int(new_h)), isColor=True)
+    out = cv.VideoWriter('output.mp4', fourcc, 15, (new_w, new_h), isColor=True)
 
     velocities = []
     text = ""
     ret, frame = cap.read()
     
-    frame = cv.resize(frame, (int(new_w), int(new_h)), fx=0, fy=0, interpolation = cv.INTER_CUBIC)
+    frame = cv.resize(frame, (new_w, new_h), fx=0, fy=0, interpolation = cv.INTER_CUBIC)
     out.write(frame)
 
     old_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
@@ -158,7 +158,7 @@ def stream_predict_save(path: str, estimator='base', decrease_resolution_limit=(
         if not ret:        
             break
         else:
-            frame = cv.resize(frame, (int(new_w), int(new_h)), fx=0, fy=0, interpolation = cv.INTER_CUBIC)        
+            frame = cv.resize(frame, (new_w, new_h), fx=0, fy=0, interpolation = cv.INTER_CUBIC)        
             frame_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
 
             p1, st, err = cv.calcOpticalFlowPyrLK(
