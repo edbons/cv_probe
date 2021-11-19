@@ -106,7 +106,8 @@ def evaluate(path, save_video=False, show_gui=False):
     line_upper = [(0, int(dim[1] * (1/3))), (dim[0], int(dim[1] * (1/3))) ]
     line_lower = [(0, int(dim[1] * (2/3))), (dim[0], int(dim[1] * (2/3))) ]
 
-    out = cv.VideoWriter('yolo_sort_output.mp4', fourcc, 15, dim, isColor=True)
+    if save_video:
+        out = cv.VideoWriter('yolo_sort_output.mp4', fourcc, 15, dim, isColor=True)
 
     frame_counter = 0
     mot_tracker = Sort(max_age=2)
@@ -159,8 +160,9 @@ def evaluate(path, save_video=False, show_gui=False):
 
         if save_video:
             out.write(frame)
-        
-    out.release()
+    
+    if save_video:    
+        out.release()
 
     cap.release()
     cv.destroyAllWindows()
