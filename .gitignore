@@ -9,3 +9,10 @@ __pycache__/
 *.csv
 *.dat
 images/*
+yolo.ipynb
+yolo.py
+cv_trackers.ipynb
+evaluate.ipynb
+traffic_intensity.py
+README_*.md
+yolo/yolov4-tiny.weights
