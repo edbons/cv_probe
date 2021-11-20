@@ -11,6 +11,7 @@ NMS_threshold = 0.4
 
 line_upper = []
 line_lower = []
+line_middle = []
 
 class_colors = {'car': (0, 255, 0), 'bus': (0, 0, 255), 'truck':(255, 0, 0)}
 CLASSES = ['car', 'bus', 'truck']
@@ -60,7 +61,7 @@ def sort_predict(frame, detections, memory, counter, color, label, tracker):
                     p0 = (int(x + (w-x)/2), int(y + (h-y)/2))
                     p1 = (int(x2 + (w2-x2)/2), int(y2 + (h2-y2)/2))
                     cv.line(frame, p0, p1, color, 3)
-                    if intersect(p0, p1, line_upper[0], line_upper[1]) | intersect(p0, p1, line_lower[0], line_lower[1]):                        
+                    if intersect(p0, p1, line_upper[0], line_upper[1]) | intersect(p0, p1, line_lower[0], line_lower[1]) | intersect(p0, p1, line_middle[0], line_middle[1]):                        
                         counter.add(indexIDs[i])
                         # print("id", indexIDs[i], len(counter))
 
@@ -71,7 +72,7 @@ def sort_predict(frame, detections, memory, counter, color, label, tracker):
     
     return frame, memory, counter
 
-def evaluate(path, save_video=False, show_gui=False):
+def evaluate(path, save_video=False, show_gui=False, total_only=True):
     conf_threshold = 0.7
     NMS_threshold = 0.4
 
@@ -102,9 +103,11 @@ def evaluate(path, save_video=False, show_gui=False):
 
     global line_upper
     global line_lower
+    global line_middle
     
-    line_upper = [(0, int(dim[1] * (1/3))), (dim[0], int(dim[1] * (1/3))) ]
-    line_lower = [(0, int(dim[1] * (2/3))), (dim[0], int(dim[1] * (2/3))) ]
+    line_upper = [(0, int(dim[1] * (1/3))), (dim[0], int(dim[1] * (1/3)))]
+    line_lower = [(0, int(dim[1] * (2/3))), (dim[0], int(dim[1] * (2/3)))]
+    line_middle = [(int(dim[0] * 0.5), 0), (int(dim[0] * 0.5), dim[1])]
 
     if save_video:
         out = cv.VideoWriter('yolo_sort_output.mp4', fourcc, 15, dim, isColor=True)
@@ -147,10 +150,13 @@ def evaluate(path, save_video=False, show_gui=False):
 
         cv.line(frame, line_upper[0], line_upper[1], (0, 255, 255), 2)
         cv.line(frame, line_lower[0], line_lower[1], (0, 255, 255), 2)
+        cv.line(frame, line_middle[0], line_middle[1], (0, 255, 255), 2)
 
-        draw_str(frame, (30, 40), f'car: {len(label_counter["car"])}')
-        draw_str(frame, (30, 80), f'bus: {len(label_counter["bus"])}')
-        draw_str(frame, (30, 120), f'truck: {len(label_counter["truck"])}')
+        draw_str(frame, (30, 40), f'total: {len(label_counter["car"]) + len(label_counter["bus"]) + len(label_counter["truck"])}')
+        if not total_only:
+            draw_str(frame, (30, 80), f'car: {len(label_counter["car"])}')
+            draw_str(frame, (30, 120), f'bus: {len(label_counter["bus"])}')
+            draw_str(frame, (30, 160), f'truck: {len(label_counter["truck"])}')
 
         if show_gui:
             cv.imshow('frame', frame)
