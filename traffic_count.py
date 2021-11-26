@@ -31,7 +31,7 @@ def ccw(A,B,C):
 	return (C[1]-A[1]) * (B[0]-A[0]) > (B[1]-A[1]) * (C[0]-A[0])
 
 
-def sort_predict(frame, detections, memory, counter, color, label, tracker):
+def sort_predict(frame, detections, memory, counter, color, label, tracker, total_only=False):
     dets = np.asarray(detections)
     tracks = tracker.update(dets)
 
@@ -64,10 +64,10 @@ def sort_predict(frame, detections, memory, counter, color, label, tracker):
                     if intersect(p0, p1, line_upper[0], line_upper[1]) | intersect(p0, p1, line_lower[0], line_lower[1]) | intersect(p0, p1, line_middle[0], line_middle[1]):                        
                         counter.add(indexIDs[i])
                         # print("id", indexIDs[i], len(counter))
-
-                text = f"{label}"
-                cv.putText(frame, text, (x, y - 5),
-                        cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                if not total_only:
+                    text = f"{label}"
+                    cv.putText(frame, text, (x, y - 5),
+                            cv.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
                 i += 1
     
     return frame, memory, counter
@@ -140,12 +140,23 @@ def evaluate(path, save_video=False, show_gui=False, total_only=True):
             if len(idxs) > 0:
                 idxs = np.array(idxs)
 
+                if not total_only:
+                    color=class_colors[label]
+                else:
+                    color=(0, 0, 255)
+
                 for i in idxs.flatten():            
                     (x, y) = (yolo_boxes[i][0], yolo_boxes[i][1])
                     (w, h) = (yolo_boxes[i][2], yolo_boxes[i][3])
                     dets.append([x, y, x+w, y+h, scores[i]])
 
-                frame, memory, counter = sort_predict(frame, dets, memory, counter=label_counter[label], color=class_colors[label], label=label, tracker=mot_tracker)
+                frame, memory, counter = sort_predict(frame, dets, 
+                                                memory, counter=label_counter[label], 
+                                                color=color, 
+                                                label=label,
+                                                tracker=mot_tracker,
+                                                total_only=total_only)
+                
                 label_counter[label].update(counter)             
 
         cv.line(frame, line_upper[0], line_upper[1], (0, 255, 255), 2)
