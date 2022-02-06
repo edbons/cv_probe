@@ -1,30 +1,31 @@
 # Подсчет количества транспорта на дороге
 
-Источники:
-
-* https://github.com/abewley/sort
-
-Применяемые программные средства:
-
-1. Python 3.9
-2. OpenCV 4.5
-3. Numpy 1.2
-4. Pandas
-
 Реализация:
 
 * YOLOv4 (Tiny) + SORT
 
 Состав проекта:
 
-* yolo_sort.ipynb - пример использования решения.
 * traffic_count.py - модуль с функциями подсчета транспорта.
+* sort.py - модуль с реализацией алгоритма *[SORT](https://github.com/abewley/sort)*
+* yolo - каталог с конфигурацией YOLOv4 (Tiny)
+
+Использование:
+
+```
+usage: traffic_count.py [-h] [--path PATH] [--save_video] [--show_gui]
+
+optional arguments:
+  -h, --help    show this help message and exit
+  --path PATH   path to video file
+  --save_video  save video with counts
+  --show_gui    show opencv GUI
+
+Example: python -m traffic_count --save_video --path <source video file>
+```
+
+В текущем каталоге сохраняется файл "output.avi".
 
 Результаты:
 
-1. Ложные срабатывания для классов автобуса и грузовика.
-
-Возможные улучшения:
-
-1. Автоматическое определение зоны пересечения транспортом для разных конфигураций перекрестков.
-2. Применение Deep SORT для трекинга.
+* присутствуют ложные срабатывания для классов автобуса и грузовика

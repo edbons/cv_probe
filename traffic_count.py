@@ -1,19 +1,20 @@
+from dis import show_code
 import cv2 as cv
 import numpy as np
 from argparse import ArgumentParser
 from collections import defaultdict
-from sort import *
+from sort import Sort
 
 
-yolo_cfg_path = 'yolo'
-conf_threshold = 0.7
-NMS_threshold = 0.4
+YOLO_CFG_PATH = 'yolo'
+CONF_THRESHOLD = 0.7
+NMS_THRESHOLD = 0.4
 
-line_upper = []
-line_lower = []
-line_middle = []
+LINE_UPPER = []
+LINE_LOWER = []
+LINE_MIDDLE = []
 
-class_colors = {'car': (0, 255, 0), 'bus': (0, 0, 255), 'truck':(255, 0, 0)}
+CLASS_COLORS = {'car': (0, 255, 0), 'bus': (0, 0, 255), 'truck':(255, 0, 0)}
 CLASSES = ['car', 'bus', 'truck']
 
 
@@ -61,9 +62,9 @@ def sort_predict(frame, detections, memory, counter, color, label, tracker, tota
                     p0 = (int(x + (w-x)/2), int(y + (h-y)/2))
                     p1 = (int(x2 + (w2-x2)/2), int(y2 + (h2-y2)/2))
                     cv.line(frame, p0, p1, color, 3)
-                    if intersect(p0, p1, line_upper[0], line_upper[1]) | intersect(p0, p1, line_lower[0], line_lower[1]) | intersect(p0, p1, line_middle[0], line_middle[1]):                        
+                    if intersect(p0, p1, LINE_UPPER[0], LINE_UPPER[1]) | intersect(p0, p1, LINE_LOWER[0], LINE_LOWER[1]) | intersect(p0, p1, LINE_MIDDLE[0], LINE_MIDDLE[1]):                        
                         counter.add(indexIDs[i])
-                        # print("id", indexIDs[i], len(counter))
+                
                 if not total_only:
                     text = f"{label}"
                     cv.putText(frame, text, (x, y - 5),
@@ -72,45 +73,40 @@ def sort_predict(frame, detections, memory, counter, color, label, tracker, tota
     
     return frame, memory, counter
 
-def evaluate(path, save_video=False, show_gui=False, total_only=True):
-    conf_threshold = 0.7
-    NMS_threshold = 0.4
+def evaluate(path, save_video=False, show_gui=False, total_only=True, model_input_size=(416, 416)):
 
-    class_colors = {'car': (0, 255, 0), 'bus': (0, 0, 255), 'truck':(255, 0, 0)}
-    classes = ['car', 'bus', 'truck']
+    CLASS_COLORS = {'car': (0, 255, 0), 'bus': (0, 0, 255), 'truck':(255, 0, 0)}    
 
-    with open(yolo_cfg_path + '/classes.txt', 'r') as f:
+    with open(YOLO_CFG_PATH + '/classes.txt', 'r') as f:
         class_names = [cname.strip() for cname in f.readlines()]
 
-    class2idx = {name: class_names.index(name) for name in classes}
+    class2idx = {name: class_names.index(name) for name in CLASSES}
     idx2class = {v: k for k, v in class2idx.items()}
 
-    net = cv.dnn.readNet(yolo_cfg_path + '/yolov4-tiny.weights',
-                        yolo_cfg_path + '/yolov4-tiny.cfg')
+    net = cv.dnn.readNet(YOLO_CFG_PATH + '/yolov4-tiny.weights',
+                        YOLO_CFG_PATH + '/yolov4-tiny.cfg')
 
     model = cv.dnn_DetectionModel(net)
-    model.setInputParams(size=(416, 416), scale=1/255, swapRB=True)
+    model.setInputParams(size=model_input_size, scale=1/255, swapRB=True)
 
     cap = cv.VideoCapture(path)
 
-    frame_w = cap.get(cv.CAP_PROP_FRAME_WIDTH)
-    frame_h = cap.get(cv.CAP_PROP_FRAME_HEIGHT)
-
-    fourcc = cv.VideoWriter_fourcc(*'X264')
+    # fourcc = cv.VideoWriter_fourcc(*'X264')
     # fourcc = cv.VideoWriter_fourcc(*'avc1')
+    fourcc = cv.VideoWriter_fourcc(*'DIVX')
 
-    dim = (int(frame_w/4), int(frame_h/4))
+    dim = model_input_size
 
-    global line_upper
-    global line_lower
-    global line_middle
+    global LINE_UPPER
+    global LINE_LOWER
+    global LINE_MIDDLE
     
-    line_upper = [(0, int(dim[1] * (1/3))), (dim[0], int(dim[1] * (1/3)))]
-    line_lower = [(0, int(dim[1] * (2/3))), (dim[0], int(dim[1] * (2/3)))]
-    line_middle = [(int(dim[0] * 0.5), 0), (int(dim[0] * 0.5), dim[1])]
+    LINE_UPPER = [(0, int(dim[1] * (1/3))), (dim[0], int(dim[1] * (1/3)))]
+    LINE_LOWER = [(0, int(dim[1] * (2/3))), (dim[0], int(dim[1] * (2/3)))]
+    LINE_MIDDLE = [(int(dim[0] * 0.5), 0), (int(dim[0] * 0.5), dim[1])]
 
     if save_video:
-        out = cv.VideoWriter('yolo_sort_output.mp4', fourcc, 15, dim, isColor=True)
+        out = cv.VideoWriter('output.avi', fourcc, 15, dim, isColor=True)
 
     frame_counter = 0
     mot_tracker = Sort(max_age=2)
@@ -126,7 +122,7 @@ def evaluate(path, save_video=False, show_gui=False, total_only=True):
             break
 
         frame = cv.resize(frame, dim, interpolation=cv.INTER_AREA)
-        classes, scores, yolo_boxes = model.detect(frame, conf_threshold, NMS_threshold)
+        classes, scores, yolo_boxes = model.detect(frame, CONF_THRESHOLD, NMS_THRESHOLD)
 
         label_idxs = defaultdict(list)
 
@@ -141,14 +137,15 @@ def evaluate(path, save_video=False, show_gui=False, total_only=True):
                 idxs = np.array(idxs)
 
                 if not total_only:
-                    color=class_colors[label]
+                    color=CLASS_COLORS[label]
                 else:
                     color=(0, 0, 255)
 
                 for i in idxs.flatten():            
                     (x, y) = (yolo_boxes[i][0], yolo_boxes[i][1])
                     (w, h) = (yolo_boxes[i][2], yolo_boxes[i][3])
-                    dets.append([x, y, x+w, y+h, scores[i]])
+
+                    dets.append([x, y, x + w, y + h, scores[i]])
 
                 frame, memory, counter = sort_predict(frame, dets, 
                                                 memory, counter=label_counter[label], 
@@ -159,9 +156,9 @@ def evaluate(path, save_video=False, show_gui=False, total_only=True):
                 
                 label_counter[label].update(counter)             
 
-        cv.line(frame, line_upper[0], line_upper[1], (0, 255, 255), 2)
-        cv.line(frame, line_lower[0], line_lower[1], (0, 255, 255), 2)
-        cv.line(frame, line_middle[0], line_middle[1], (0, 255, 255), 2)
+        cv.line(frame, LINE_UPPER[0], LINE_UPPER[1], (0, 255, 255), 2)
+        cv.line(frame, LINE_LOWER[0], LINE_LOWER[1], (0, 255, 255), 2)
+        cv.line(frame, LINE_MIDDLE[0], LINE_MIDDLE[1], (0, 255, 255), 2)
 
         draw_str(frame, (30, 40), f'total: {len(label_counter["car"]) + len(label_counter["bus"]) + len(label_counter["truck"])}')
         if not total_only:
@@ -189,14 +186,14 @@ def evaluate(path, save_video=False, show_gui=False, total_only=True):
 def main():
     parser = ArgumentParser()
     parser.add_argument('--path', type=str, help="path to video file")
-    parser.add_argument('--save_video', action='store_true', help="save video with counts")    
+    parser.add_argument('--save_video', action='store_true', help="save video with counts")
+    parser.add_argument('--show_gui', action='store_true', help="show opencv GUI")    
     args = parser.parse_args()
+    
+    evaluate(args.path, save_video=args.save_video, show_gui=args.show_gui)
     if args.save_video:
-        evaluate(args.path, save_video=True)
-        print("Predicts was saved to file yolo_sort_output.mp4")
-    else:
-        evaluate(args.path)
-
+        print("Save to file output.avi...")
+    
 
 if __name__ == '__main__':
     main()
